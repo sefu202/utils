@@ -4,7 +4,8 @@
 #include <assert.h>
 
 // *** DEFINES ***
-
+#define _WRITE_LOCK 0x01
+#define _READ_LOCK  0x02
 /*
 #define _READ_LOCKED 0x01
 #define _WRITE_LOCKED 0x02
@@ -70,6 +71,7 @@ int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo,
     pHandle->pFifo = pFifo;
     pHandle->read_idx = 0;
     pHandle->write_idx = 0;
+    pHandle->_lock = 0;
     return 0;
 }
 
@@ -92,7 +94,15 @@ fifoerror_t fifo_put(fifo_handle_t *pHandle, const void *pData)
         return FIFO_WRONG_PARAM;
     if (pData == NULL)
         return FIFO_WRONG_PARAM;
+
 FIFO_ENTER_CRITICAL();
+    if (pHandle->_lock & _WRITE_LOCK)   // fifo is write-locked
+    {
+        return FIFO_BUISY;
+    }
+    pHandle->_lock |= _WRITE_LOCK;      // lock the handle
+FIFO_LEAVE_CRITICAL();
+
     // *** Ring ***
     FIFO_INDEX_TYPE idx_temp = pHandle->write_idx + pHandle->basetype_size;
 
@@ -112,6 +122,8 @@ FIFO_ENTER_CRITICAL();
         memcpy(((uint8_t *)(pHandle->pFifo) + (pHandle->write_idx = idx_temp)), pData, pHandle->basetype_size);
         ret = FIFO_NO_ERROR;
     }
+FIFO_ENTER_CRITICAL();
+    pHandle->_lock &= ~_WRITE_LOCK;     // unlock the handle
 FIFO_LEAVE_CRITICAL();
     return ret;
 }
@@ -138,6 +150,13 @@ fifoerror_t fifo_get(fifo_handle_t *pHandle, void *pData)
     FIFO_INDEX_TYPE idx_temp;
 
 FIFO_ENTER_CRITICAL();
+    if (pHandle->_lock & _READ_LOCK)   // fifo is read-locked
+    {
+        return FIFO_BUISY;
+    }
+    pHandle->_lock |= _READ_LOCK;      // lock the handle
+FIFO_LEAVE_CRITICAL();
+
     // *** Check if data available ***
     if (pHandle->write_idx == pHandle->read_idx)  // no data in fifo
     {
@@ -154,6 +173,10 @@ FIFO_ENTER_CRITICAL();
 
     // *** Copty the data ***
     memcpy(pData, ((uint8_t *)(pHandle->pFifo)) + (pHandle->read_idx = idx_temp), pHandle->basetype_size);
+
+FIFO_ENTER_CRITICAL();
+    pHandle->_lock &= ~_READ_LOCK;     // unlock the handle
 FIFO_LEAVE_CRITICAL();
+
     return FIFO_NO_ERROR;
 }
