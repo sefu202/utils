@@ -10,7 +10,7 @@
  */
 // *** INCLUDES ***
 #include "fifo.h"
-#include <string.h> // memcpy
+#include <string.h> // memcpy 
 #include <assert.h>
 
 // *** DEFINES ***
