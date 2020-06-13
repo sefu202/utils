@@ -1,13 +1,3 @@
-/**
- * @file fifo.c
- * @brief this library can be used to handle fifo memory buffers
- * The Library consists of the fuctions fifo_init(), fifo_put() and fifo_get()
- * and the types fifoerror_t and fifo_handle_t
- * This library can handle multiple fifos of multiple data types.
- * @author Josef Aschwanden
- * @date Jun - 2020
- * @version 1.0
- */
 // *** INCLUDES ***
 #include "fifo.h"
 #include <string.h> // memcpy 
@@ -52,7 +42,6 @@ static void _read_unlock(fifo_handle_t *pHandle)
  * @param pFifo pointer to the fifo memory
  * @param size_fifo size of the fifo in bytes
  * @param basetype_size size of the fifo basetype eg: sizeof(uint8_t)
- * @note size_fifo size of the FIFO in bytes
  * @retval 0 = success
  * @retval -1 = NULL Pointer as Parameter
  * @retval -2 = invalid fifo size
@@ -64,7 +53,7 @@ int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo,
     assert(pHandle);
     assert(pFifo);
     assert(size_fifo <= MAX_FIFO_SIZE && size_fifo > 0);
-    assert(basetype_size > 0 && basetype_size <= UINT8_MAX);
+    assert(basetype_size > 0 && basetype_size <= FIFO_MAX_BASETYPE_SIZE);
 #endif
 
     // *** Checking Parameters ***
@@ -72,7 +61,7 @@ int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo,
         return -1;
     if (size_fifo > MAX_FIFO_SIZE || size_fifo == 0)
         return -2;
-    if (basetype_size == 0 || basetype_size > UINT8_MAX)
+    if (basetype_size == 0 || basetype_size > FIFO_MAX_BASETYPE_SIZE)
         return -3;
 
     // *** Initialize Handle ***
@@ -148,12 +137,13 @@ fifoerror_t fifo_get(fifo_handle_t *pHandle, void *pData)
 
     FIFO_INDEX_TYPE idx_temp;
 
+FIFO_ENTER_CRITICAL();
     // *** Check if data available ***
     if (pHandle->write_idx == pHandle->read_idx)  // no data in fifo
     {
         return FIFO_EMPTY;
     }
-FIFO_ENTER_CRITICAL();
+
     // *** Ring ***
     idx_temp = pHandle->read_idx + pHandle->basetype_size;
 

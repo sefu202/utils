@@ -11,8 +11,6 @@
 #include "fifo.h"
 #include <stdint.h>
 
-
-
 /**
  * @brief this function is a small test for the FIFO Library
  */
