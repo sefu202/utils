@@ -1,8 +1,17 @@
+/**
+ * @file fifo.c
+ * @brief this library can be used to handle fifo memory buffers
+ * The Library consists of the fuctions fifo_init(), fifo_put() and fifo_get()
+ * and the types fifoerror_t and fifo_handle_t
+ * This library can handle multiple fifos of multiple data types.
+ * @author Josef Aschwanden
+ * @date Jun - 2020
+ * @version 1.0
+ */
 // *** INCLUDES ***
 #include "fifo.h"
 #include <string.h> // memcpy
 #include <assert.h>
-#include <stdbool.h>
 
 // *** DEFINES ***
 
@@ -41,29 +50,29 @@ static void _read_unlock(fifo_handle_t *pHandle)
  * @note If _DEBUG is defined every Parameter will be checked with assert()
  * @param pHandle pointer to the fifo handle
  * @param pFifo pointer to the fifo memory
- * @param size_fifo size of the fifo
+ * @param size_fifo size of the fifo in bytes
  * @param basetype_size size of the fifo basetype eg: sizeof(uint8_t)
- * @note size_fifo is not counted in bytes but in ammount of space for the basetype: for void *magicValues[8] its sizeof(magicValues)
- * @retval 0 = success 
+ * @note size_fifo size of the FIFO in bytes
+ * @retval 0 = success
  * @retval -1 = NULL Pointer as Parameter
  * @retval -2 = invalid fifo size
  * @retval -3 = invalid basetype_size
  */
-int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo,size_t basetype_size)
+int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size)
 {
 #ifdef _DEBUG
     assert(pHandle);
     assert(pFifo);
     assert(size_fifo <= MAX_FIFO_SIZE && size_fifo > 0);
-    assert(basetype_size > 0 && basetype_size <= sizeof(uint64_t));
+    assert(basetype_size > 0 && basetype_size <= UINT8_MAX);
 #endif
 
     // *** Checking Parameters ***
-    if (pHandle == NULL || pFifo == NULL || size_fifo)
+    if (pHandle == NULL || pFifo == NULL)
         return -1;
-    if (size_fifo <= MAX_FIFO_SIZE && size_fifo > 0)
+    if (size_fifo > MAX_FIFO_SIZE || size_fifo == 0)
         return -2;
-    if (basetype_size > 0 && basetype_size <= sizeof(uint64_t))
+    if (basetype_size == 0 || basetype_size > UINT8_MAX)
         return -3;
 
     // *** Initialize Handle ***
@@ -96,7 +105,7 @@ fifoerror_t fifo_put(fifo_handle_t *pHandle, const void *pData)
         return FIFO_WRONG_PARAM;
 FIFO_ENTER_CRITICAL();
     // *** Ring ***
-    FIFO_INDEX_TYPE idx_temp = pHandle->write_idx + 1;
+    FIFO_INDEX_TYPE idx_temp = pHandle->write_idx + pHandle->basetype_size;
 
     if (idx_temp >= pHandle->size)
     {
@@ -111,7 +120,7 @@ FIFO_ENTER_CRITICAL();
     else        // space available
     {
         // *** Write to the fifo ***
-        memcpy(pHandle->pFifo + ((pHandle->write_idx = idx_temp) * pHandle->basetype_size), pData, pHandle->basetype_size);
+        memcpy(((uint8_t *)(pHandle->pFifo) + (pHandle->write_idx = idx_temp)), pData, pHandle->basetype_size);
         ret = FIFO_NO_ERROR;
     }
 FIFO_LEAVE_CRITICAL();
@@ -146,7 +155,7 @@ fifoerror_t fifo_get(fifo_handle_t *pHandle, void *pData)
     }
 FIFO_ENTER_CRITICAL();
     // *** Ring ***
-    idx_temp = pHandle->read_idx + 1;
+    idx_temp = pHandle->read_idx + pHandle->basetype_size;
 
     if (idx_temp >= pHandle->size) 
     {
@@ -154,7 +163,7 @@ FIFO_ENTER_CRITICAL();
     }
 
     // *** Copty the data ***
-    memcpy(pData, pHandle->pFifo + (pHandle->read_idx = idx_temp) * pHandle->basetype_size, pHandle->basetype_size);
+    memcpy(pData, ((uint8_t *)(pHandle->pFifo)) + (pHandle->read_idx = idx_temp), pHandle->basetype_size);
 FIFO_LEAVE_CRITICAL();
     return FIFO_NO_ERROR;
 }

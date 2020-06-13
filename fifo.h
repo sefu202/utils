@@ -6,7 +6,7 @@
  * This library can handle multiple fifos of multiple data types.
  * @author Josef Aschwanden
  * @date Jun - 2020
- * @version 0.1 Alpha
+ * @version 1.0
  */
 // *** INCLUDES ***
 #include <stdint.h>
@@ -55,12 +55,12 @@ typedef enum{
  * @brief this structure is used as handle for the fifo library
  */
 typedef struct{
-    size_t basetype_size;       /*!< sizeof the fifo basetype */
-    FIFO_INDEX_TYPE size;       /*!< size of the fifo memory with respect to the basetype */
+    uint8_t basetype_size;      /*!< sizeof the fifo basetype */
+    FIFO_INDEX_TYPE size;       /*!< size of the fifo memory in bytes */
     FIFO_INDEX_TYPE read_idx;   /*!< read index for fifo read access */
     FIFO_INDEX_TYPE write_idx;  /*!< write index for fifo write access */
-    void *pFifo;                /*!< pointer to the fifo memory */
-    // uint8_t _lock               /*!< variable to lock the fifo see, internally used */
+    void *pFifo;               /*!< pointer to the first adress of the fifo memory */
+    // uint8_t _lock            /*!< variable to lock the fifo see, internally used */
 }fifo_handle_t;
 
 /**
@@ -68,15 +68,15 @@ typedef struct{
  * @note If _DEBUG is defined every Parameter will be checked with assert()
  * @param pHandle pointer to the fifo handle
  * @param pFifo pointer to the fifo memory
- * @param size_fifo size of the fifo
+ * @param size_fifo size of the fifo in bytes
  * @param basetype_size size of the fifo basetype eg: sizeof(uint8_t)
- * @note size_fifo is not counted in bytes but in ammount of space for the basetype: for void *magicValues[8] its sizeof(magicValues)
+ * @note size_fifo size of the FIFO in bytes
  * @retval 0 = success 
  * @retval -1 = NULL Pointer as Parameter
  * @retval -2 = invalid fifo size
  * @retval -3 = invalid basetype_size
  */
-int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, size_t basetype_size);
+int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size);
 
 /**
  * @brief puts an element into the fifo.
@@ -84,7 +84,7 @@ int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo,
  * @param [in] pData pointer to the data to be put onto the fifo
  * @return fifoerror_t
  */
-fifoerror_t fifo_put(fifo_handle_t *pHandle, void *pData);
+fifoerror_t fifo_put(fifo_handle_t *pHandle, const void *pData);
 
 /**
  * @brief puts an element into the fifo.
@@ -93,4 +93,4 @@ fifoerror_t fifo_put(fifo_handle_t *pHandle, void *pData);
  * @param [out] pData pointer to the storage for the data from the fifo
  * @return fifoerror_t
  */
-fifoerror_t fifo_get(fifo_handle_t *pHandle, void *pData)
+fifoerror_t fifo_get(fifo_handle_t* pHandle, void *pData);
