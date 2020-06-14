@@ -6,35 +6,6 @@
 // *** DEFINES ***
 #define _WRITE_LOCK 0x01
 #define _READ_LOCK  0x02
-/*
-#define _READ_LOCKED 0x01
-#define _WRITE_LOCKED 0x02
-
-static uint8_t _isReadLocked(fifo_handle_t *pHandle)
-{
-    return pHandle->_lock & _READ_LOCKED;
-}
-static uint8_t _isWriteLocked(fifo_handle_t *pHandle)
-{
-    return pHandle->_lock & _WRITE_LOCKED;
-}
-static void _read_lock(fifo_handle_t *pHandle)
-{
-    pHandle->_lock |= _READ_LOCKED;
-}
-static void _write_lock(fifo_handle_t *pHandle)
-{
-    pHandle->_lock |= _WRITE_LOCKED;
-}
-static void _write_unlock(fifo_handle_t *pHandle)
-{
-    pHandle->_lock &= ~_WRITE_LOCKED;
-}
-static void _read_unlock(fifo_handle_t *pHandle)
-{
-    pHandle->_lock &= ~_READ_LOCKED;
-}
-*/
 
 /**
  * @brief initializes a fifo handle
@@ -48,7 +19,7 @@ static void _read_unlock(fifo_handle_t *pHandle)
  * @retval -2 = invalid fifo size
  * @retval -3 = invalid basetype_size
  */
-int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size)
+int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size)
 {
 #ifdef _DEBUG
     assert(pHandle);
@@ -82,7 +53,7 @@ int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo,
  * @param [in] pData pointer to the data to be put onto the fifo
  * @return fifoerror_t
  */
-fifoerror_t fifo_put(fifo_handle_t *pHandle, const void *pData)
+fifoerror_t fifo_put(volatile fifo_handle_t *pHandle, const void *pData)
 {
     fifoerror_t ret;
 #ifdef _DEBUG
@@ -135,7 +106,7 @@ FIFO_LEAVE_CRITICAL();
  * @param [out] pData pointer to the storage for the data from the fifo
  * @return fifoerror_t
  */
-fifoerror_t fifo_get(fifo_handle_t *pHandle, void *pData)
+fifoerror_t fifo_get(volatile fifo_handle_t *pHandle, void *pData)
 {
 #ifdef _DEBUG
     assert(pHandle);

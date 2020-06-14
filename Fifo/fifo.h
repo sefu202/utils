@@ -8,6 +8,10 @@
  * @date Jun - 2020
  * @version 1.0
  */
+
+ #ifndef _FIFO_H_
+ #define _FIFO_H_
+ 
 // *** INCLUDES ***
 #include <stdint.h>
 
@@ -79,7 +83,7 @@ typedef struct{
     FIFO_INDEX_TYPE read_idx;               /*!< read index for fifo read access */
     FIFO_INDEX_TYPE write_idx;              /*!< write index for fifo write access */
     void *pFifo;                            /*!< pointer to the first adress of the fifo memory */
-    uint8_t _lock                           /*!< flag to lock the fifo */
+	uint8_t _lock;                          /*!< flag to lock the fifo */
 }fifo_handle_t;
 
 /**
@@ -94,7 +98,7 @@ typedef struct{
  * @retval -2 = invalid fifo size
  * @retval -3 = invalid basetype_size
  */
-int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size);
+int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size);
 
 /**
  * @brief puts an element into the fifo.
@@ -103,7 +107,7 @@ int8_t fifo_init(fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo,
  * @param [in] pData pointer to the data to be put onto the fifo
  * @return fifoerror_t
  */
-fifoerror_t fifo_put(fifo_handle_t *pHandle, const void *pData);
+fifoerror_t fifo_put(volatile fifo_handle_t *pHandle, const void *pData);
 
 /**
  * @brief puts an element into the fifo.
@@ -112,4 +116,6 @@ fifoerror_t fifo_put(fifo_handle_t *pHandle, const void *pData);
  * @param [out] pData pointer to the storage for the data from the fifo
  * @return fifoerror_t
  */
-fifoerror_t fifo_get(fifo_handle_t* pHandle, void *pData);
+fifoerror_t fifo_get(volatile fifo_handle_t* pHandle, void *pData);
+
+#endif  // _FIFO_H_

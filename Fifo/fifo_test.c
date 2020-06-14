@@ -18,7 +18,7 @@ int main(void)
 {
 	uint64_t magicValues[10];
 	uint8_t mySecretValues[20];			// to check 2 simultanious fifos
-	fifo_handle_t hfifo, my2ndFifo;
+	volatile fifo_handle_t hfifo, my2ndFifo;
 
 
     fifo_init(&hfifo, magicValues, sizeof(magicValues), sizeof(*magicValues));
@@ -60,6 +60,6 @@ int main(void)
 		else
 			printf("\nMagic Value: %i, wich is correct", magicValue);
 	}
-    char dummy;
-    scanf("%c", &dummy);
+    
+	system("pause");
 }
