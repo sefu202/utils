@@ -61,5 +61,6 @@ int main(void)
 			printf("\nMagic Value: %i, wich is correct", magicValue);
 	}
     
-	system("pause");
+	char dummy;
+	scanf("%s", &dummy);
 }
