@@ -1,7 +1,12 @@
 // *** INCLUDES ***
 #include "fifo.h"
 #include <string.h> // memcpy 
-#include <assert.h>
+#ifdef _DEBUG
+    #include <assert.h>
+#endif
+#if FIFO_ALLOW_MALLOC == true
+    #include <malloc.h>
+#endif /* FIFO_ALLOW_MALLOC */
 
 // *** DEFINES ***
 #define _WRITE_LOCK 0x01
@@ -22,8 +27,8 @@
 int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size)
 {
 #ifdef _DEBUG
-    assert(pHandle);
-    assert(pFifo);
+    assert(pHandle != NULL);
+    assert(pFifo != NULL);
     assert(size_fifo <= MAX_FIFO_SIZE && size_fifo > 0);
     assert(basetype_size > 0 && basetype_size <= FIFO_MAX_BASETYPE_SIZE);
 #endif
@@ -46,6 +51,77 @@ int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE s
     return 0;
 }
 
+#if FIFO_ALLOW_MALLOC
+/**
+ * @brief allocates a fifo handle and the fifo memory, and initializes it
+ * @note If _DEBUG is defined every Parameter will be checked with assert()
+ * @note memory has to be freed with fifo_deinit_free()
+ * @param size_fifo size of the fifo in bytes
+ * @param basetype_size size of the fifo basetype eg: sizeof(uint8_t)
+ * @retval NULL = failed
+ * @return pointer to the fifo handle
+ */
+fifo_handle_t *fifo_init_malloc(FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size)
+{
+ #ifdef _DEBUG
+    assert(size_fifo <= MAX_FIFO_SIZE && size_fifo > 0);
+    assert(basetype_size > 0 && basetype_size <= FIFO_MAX_BASETYPE_SIZE);
+#endif
+    // *** Checking Parameters ***
+    if (size_fifo > MAX_FIFO_SIZE || size_fifo == 0)
+        return NULL;
+    if (basetype_size == 0 || basetype_size > FIFO_MAX_BASETYPE_SIZE)
+        return NULL;
+    
+    fifo_handle_t *myHandle = NULL;
+
+    // *** Allocate Handle ***
+    myHandle = (fifo_handle_t *)malloc(sizeof(*myHandle));
+
+    if (myHandle == NULL)
+    {
+        return NULL;
+    }
+
+    // *** Allocate Buffer ***
+    myHandle->pFifo = malloc(size_fifo * basetype_size);
+    if (myHandle->pFifo == NULL)
+    {
+        free((void *)myHandle);
+        return NULL;
+    }
+
+    // *** Initialize Handle ***
+    myHandle->size = size_fifo;
+    myHandle->basetype_size = basetype_size;
+    myHandle->read_idx = 0;
+    myHandle->write_idx = 0;
+    myHandle->_lock = 0;
+
+    return myHandle;
+}
+
+/**
+ * @brief deallocates a fifo handle and its buffer
+ * @note if _DEBUG is defined pHandle gets checked with assert()
+ * @param pHandle pointer to the Fifo handle
+ */
+void fifo_deinit_free(volatile fifo_handle_t *pHandle)
+{
+#ifdef _DEBUG
+    assert(pHandle != NULL);
+#endif
+    if (pHandle->pFifo != NULL)
+    {
+        free(pHandle->pFifo);
+    }
+    if (pHandle != NULL)
+    {
+        free((void *)pHandle);
+    }
+}
+#endif  /* FIFO_ALLOW_MALLOC */
+
 /**
  * @brief puts an element into the fifo.
  * @note If _DEBUG is defined every Parameter will be checked with assert()
@@ -57,8 +133,8 @@ fifoerror_t fifo_put(volatile fifo_handle_t *pHandle, const void *pData)
 {
     fifoerror_t ret;
 #ifdef _DEBUG
-    assert(pHandle);
-    assert(pData);
+    assert(pHandle != NULL);
+    assert(pData != NULL);
 #endif
     // *** Checking Parameters ***
     if (pHandle == NULL)
@@ -109,8 +185,8 @@ FIFO_LEAVE_CRITICAL();
 fifoerror_t fifo_get(volatile fifo_handle_t *pHandle, void *pData)
 {
 #ifdef _DEBUG
-    assert(pHandle);
-    assert(pData);
+    assert(pHandle != NULL);
+    assert(pData != NULL);
 #endif
     // *** Checking Parameters ***
     if (pHandle == NULL)
@@ -150,4 +226,53 @@ FIFO_ENTER_CRITICAL();
 FIFO_LEAVE_CRITICAL();
 
     return FIFO_NO_ERROR;
+}
+
+
+/**
+ * @brief checks if a fifo still has elements in it
+ * @note pHandle gets checked with assert() when _DEBUG is defined
+ * @retval true = has elements left
+ */
+bool fifo_hasElementsLeft(volatile fifo_handle_t *pHandle)
+{
+#ifdef _DEBUG
+    assert(pHandle != NULL);
+#endif
+    // *** Check if data available ***
+    if (pHandle == NULL || pHandle->write_idx == pHandle->read_idx)  // no data in fifo
+    {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief checks if a fifo still free space in it
+ * @note pHandle gets checked with assert() when _DEBUG is defined
+ * @retval true = has free space left
+ */
+bool fifo_hasSpaceLeft(volatile fifo_handle_t *pHandle)
+{
+#ifdef _DEBUG
+    assert(pHandle != NULL);
+#endif
+    // *** Checking Parameters ***
+    if (pHandle == NULL)
+    {
+        return false;
+    }
+
+    FIFO_INDEX_TYPE idx_temp = pHandle->write_idx + pHandle->basetype_size;
+    if (idx_temp >= pHandle->size)
+    {
+        idx_temp = 0;
+    }
+
+    // *** Check if space available ***
+    if (idx_temp == pHandle->read_idx)  // No space
+    {
+        return false;
+    }
+    return true;
 }

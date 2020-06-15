@@ -14,6 +14,7 @@
  
 // *** INCLUDES ***
 #include <stdint.h>
+#include <stdbool.h>
 
 // *** DEFINES ***
 /**
@@ -21,6 +22,11 @@
  * This Macro is internally needed for the fifo and should be set as small as possible
  */
 #define MAX_FIFO_SIZE   255
+
+/**
+ * @brief Enable Dynamic allocation of fifos
+ */
+#define FIFO_ALLOW_MALLOC   true
 
 #if MAX_FIFO_SIZE <= UINT8_MAX
     #define FIFO_INDEX_TYPE uint8_t
@@ -52,13 +58,13 @@
 /**
  * This Macro gets called when entering a critical section in the program,
  * it should be defined to disable all other Threads with access to the fifo
- * @note only needed if multiple asynchrounous threads can access the fifo
+ * @note only needed if multiple asynchrounous threads can access the fifo in the same directon (read / write)
  */
 #define FIFO_ENTER_CRITICAL()
 /**
  * This Macro gets called when leaving a critical section in the program,
  * it should be defined to revert the changes made with FIFO_ENTER_CRITICAL()
- * @note only needed if multiple asynchrounous threads can access the fifo
+ * @note only needed if multiple asynchrounous threads can access the fifo in the same directon (read / write)
  */
 #define FIFO_LEAVE_CRITICAL()
 
@@ -100,6 +106,25 @@ typedef struct{
  */
 int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size);
 
+#if FIFO_ALLOW_MALLOC
+/**
+ * @brief allocates a fifo handle and the fifo memory, and initializes it
+ * @note If _DEBUG is defined every Parameter will be checked with assert()
+ * @note memory has to be freed with fifo_deinit_free()
+ * @param size_fifo size of the fifo in bytes
+ * @param basetype_size size of the fifo basetype eg: sizeof(uint8_t)
+ * @retval NULL = Allocation failed
+ * @return pointer to the fifo handle
+ */
+fifo_handle_t *fifo_init_malloc(FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size);
+
+/**
+ * @brief deallocates a fifo handle and its buffer
+ * @param pHandle pointer to the Fifo handle
+ */
+void fifo_deinit_free(volatile fifo_handle_t *pHandle);
+#endif   /* FIFO_ALLOW_MALLOC */
+
 /**
  * @brief puts an element into the fifo.
  * @note If _DEBUG is defined every Parameter will be checked with assert()
@@ -117,5 +142,19 @@ fifoerror_t fifo_put(volatile fifo_handle_t *pHandle, const void *pData);
  * @return fifoerror_t
  */
 fifoerror_t fifo_get(volatile fifo_handle_t* pHandle, void *pData);
+
+/**
+ * @brief checks if a fifo still has elements in it
+ * @note pHandle gets checked with assert() when _DEBUG is defined
+ * @retval true = has elements left
+ */
+bool fifo_hasElementsLeft(volatile fifo_handle_t *pHandle);
+
+/**
+ * @brief checks if a fifo still free space in it
+ * @note pHandle gets checked with assert() when _DEBUG is defined
+ * @retval true = has free space left
+ */
+bool fifo_hasSpaceLeft(volatile fifo_handle_t *pHandle);
 
 #endif  // _FIFO_H_
