@@ -7,5 +7,8 @@ fifo_test.o: fifo_test.c
 fifo.o: fifo.c
 	gcc -c fifo.c
 
-clean: 
+clean_windows: 
+	del *.o test_fifo.exe
+
+clean:
 	rm *.o test_fifo
