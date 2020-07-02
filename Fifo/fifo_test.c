@@ -17,7 +17,6 @@
 #define print_debuginfo(return_value)	(printf("%sFile: %s, line: %i, returned %i%s\n", ANSI_COLOR_RED,__FILE__, __LINE__, return_value, ANSI_COLOR_RESET))
 #define print_debugs(s)					(printf("%sFile: %s, line: %i, %s%s\n", ANSI_COLOR_RED,__FILE__, __LINE__, s, ANSI_COLOR_RESET))
 
-#undef _DEBUG
 /**
  * @brief this function is a small test for the FIFO Library
  */
