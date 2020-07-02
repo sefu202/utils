@@ -4,9 +4,13 @@
  * The Library consists of the fuctions fifo_init(), fifo_put() and fifo_get()
  * and the types fifoerror_t and fifo_handle_t
  * This library can handle multiple fifos of multiple data types.
+ * @note each fifo can only store (size / basetype_size) -1 elements, the size is always in bytes
  * @author Josef Aschwanden
- * @date Jun - 2020
- * @version 1.0
+ * @date Jul - 2020
+ * @version 1.1
+ * Changes:
+ * 1.1: Added _hasElementsLeft(), _hasSpaceLeft(), _flush(), bugfixes
+ *      Josef Aschwanden
  */
 
  #ifndef _FIFO_H_
@@ -21,7 +25,7 @@
  * @brief maximum size of a fifo.
  * This Macro is internally needed for the fifo and should be set as small as possible
  */
-#define MAX_FIFO_SIZE   255
+#define MAX_FIFO_SIZE   128u
 
 /**
  * @brief Enable Dynamic allocation of fifos
@@ -42,7 +46,7 @@
  * @brief maximum size of the FIFO basetype.
  * This Macro is internally needed for the fifo and should be set as small as possible
  */
-#define FIFO_MAX_BASETYPE_SIZE 255
+#define FIFO_MAX_BASETYPE_SIZE 128
 
 #if FIFO_MAX_BASETYPE_SIZE <= UINT8_MAX
     #define SIZE_FIFO_BASE_TYPE uint8_t
@@ -104,7 +108,7 @@ typedef struct{
  * @retval -2 = invalid fifo size
  * @retval -3 = invalid basetype_size
  */
-int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size);
+int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, SIZE_FIFO_BASE_TYPE basetype_size);
 
 #if FIFO_ALLOW_MALLOC
 /**
@@ -116,7 +120,7 @@ int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE s
  * @retval NULL = Allocation failed
  * @return pointer to the fifo handle
  */
-fifo_handle_t *fifo_init_malloc(FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size);
+fifo_handle_t* fifo_init_malloc(FIFO_INDEX_TYPE size_fifo, SIZE_FIFO_BASE_TYPE basetype_size);
 
 /**
  * @brief deallocates a fifo handle and its buffer
@@ -156,5 +160,12 @@ bool fifo_hasElementsLeft(volatile fifo_handle_t *pHandle);
  * @retval true = has free space left
  */
 bool fifo_hasSpaceLeft(volatile fifo_handle_t *pHandle);
+
+/**
+ * @brief flushes a FIFO
+ * @return FIFO_NO_ERROR    Everything worked
+ * @return FIFO_BUISY       FIFO handle is locked
+ */
+fifoerror_t fifo_flush(volatile fifo_handle_t *pHandle);
 
 #endif  // _FIFO_H_

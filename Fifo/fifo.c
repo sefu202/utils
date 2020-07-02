@@ -24,7 +24,7 @@
  * @retval -2 = invalid fifo size
  * @retval -3 = invalid basetype_size
  */
-int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size)
+int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE size_fifo, SIZE_FIFO_BASE_TYPE basetype_size)
 {
 #ifdef _DEBUG
     assert(pHandle != NULL);
@@ -58,10 +58,10 @@ int8_t fifo_init(volatile fifo_handle_t *pHandle, void *pFifo, FIFO_INDEX_TYPE s
  * @note memory has to be freed with fifo_deinit_free()
  * @param size_fifo size of the fifo in bytes
  * @param basetype_size size of the fifo basetype eg: sizeof(uint8_t)
- * @retval NULL = failed
+ * @retval NULL = failed, may be a size_fifo 0 or bigger than MAX_FIFO_SIZE or basetype_size 0 or bigger than FIFO_MAX_BASETYPE_SIZE
  * @return pointer to the fifo handle
  */
-fifo_handle_t *fifo_init_malloc(FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size)
+fifo_handle_t* fifo_init_malloc(FIFO_INDEX_TYPE size_fifo, SIZE_FIFO_BASE_TYPE basetype_size)
 {
  #ifdef _DEBUG
     assert(size_fifo <= MAX_FIFO_SIZE && size_fifo > 0);
@@ -85,9 +85,9 @@ fifo_handle_t *fifo_init_malloc(FIFO_INDEX_TYPE size_fifo, uint8_t basetype_size
 
     // *** Allocate Buffer ***
     myHandle->pFifo = malloc(size_fifo * basetype_size);
-    if (myHandle->pFifo == NULL)
+    if (myHandle->pFifo == NULL)    // buffer allocation failed
     {
-        free((void *)myHandle);
+        free((void *)myHandle);     // therfore free previously allocated memory
         return NULL;
     }
 
@@ -275,4 +275,35 @@ bool fifo_hasSpaceLeft(volatile fifo_handle_t *pHandle)
         return false;
     }
     return true;
+}
+
+/**
+ * @brief flushes a FIFO by setting write- and read-index to the same value
+ * @return FIFO_NO_ERROR    Everything worked
+ * @return FIFO_BUISY       FIFO handle is locked
+ */
+fifoerror_t fifo_flush(volatile fifo_handle_t *pHandle)
+{
+#ifdef _DEBUG
+    assert(pHandle != NULL);
+#endif
+    if (pHandle == NULL)
+    {
+        return FIFO_WRONG_PARAM;
+    }
+
+FIFO_ENTER_CRITICAL();
+    if (pHandle->_lock & (_READ_LOCK | _WRITE_LOCK))  // fifo is locked
+    {
+        return FIFO_BUISY;
+    }
+    pHandle->_lock |= _READ_LOCK | _WRITE_LOCK;      // lock the handle
+FIFO_LEAVE_CRITICAL();
+
+    pHandle->read_idx = pHandle->write_idx; // flush
+
+FIFO_ENTER_CRITICAL();
+    pHandle->_lock &= ~(_READ_LOCK | _WRITE_LOCK);     // unlock the handle
+FIFO_LEAVE_CRITICAL();
+    return FIFO_NO_ERROR;
 }
