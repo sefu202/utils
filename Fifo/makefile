@@ -1,8 +1,11 @@
 test_fifo: fifo_test.o fifo.o
-	gcc fifo_test.o fifo.o -o test_fifo
+	gcc fifo_test.o fifo.o test.o -o test_fifo
 
 fifo_test.o: fifo_test.c
 	gcc -c fifo_test.c
+
+test.o: test.c
+	gcc -c test.c
 
 fifo.o: fifo.c
 	gcc -c fifo.c
