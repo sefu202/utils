@@ -333,7 +333,7 @@ void *fifo_getEndPtr(fifo_handle_t *pHandle)
  */
 fifoerror_t fifo_skip_read(fifo_handle_t *pHandle)
 {
-    fifo_skip_read_n(pHandle, 1);
+    return fifo_skip_read_n(pHandle, 1);
 }
 
 /**
