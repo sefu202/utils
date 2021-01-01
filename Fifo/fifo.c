@@ -116,7 +116,7 @@ void fifo_deinit_free(volatile fifo_handle_t *pHandle)
  */
 fifoerror_t fifo_put(volatile fifo_handle_t *pHandle, const void *pData)
 {
-    fifoerror_t ret = FIFO_BUISY;
+    fifoerror_t ret = FIFO_NO_ERROR;
 
     assert(pHandle != NULL);
     assert(pData != NULL);
@@ -144,7 +144,6 @@ fifoerror_t fifo_put(volatile fifo_handle_t *pHandle, const void *pData)
     {
         // *** Write to the fifo ***
         memcpy(((uint8_t *)(pHandle->pFifo) + (pHandle->write_idx = idx_temp)), pData, pHandle->basetype_size);
-        ret = FIFO_NO_ERROR;
     }
 
     return ret;

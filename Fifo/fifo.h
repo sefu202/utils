@@ -69,39 +69,6 @@ extern "C" {
 #endif
 
 
-/**
- * @defgroup async_macros Asynchronous Support Macros
- * These Macros are only needed if multiple asynchrounous threads can access the fifo. 
- * They prevent variables from being changed in non atomic Opeartations
- * @note The enter and leave macro are always in the same scope so variables can be created in them
- */
-/**
- * @addtogroup async_macros
- * @{
- */
-/**
- * This Macro gets called when entering a critical section in the program,
- * it should be defined to disable all other Threads with access to the fifo
- */
-#ifdef TEST_FIFO
-#define FIFO_ENTER_CRITICAL() enterCritical()
-#else
-#define FIFO_ENTER_CRITICAL()   /*User definition*/
-#endif
-
-/**
- * This Macro gets called when leaving a critical section in the program,
- * it should be defined to revert the changes made with FIFO_ENTER_CRITICAL()
- */
-#ifdef TEST_FIFO
-#define FIFO_LEAVE_CRITICAL()  leaveCritical()
-#else
-#define FIFO_LEAVE_CRITICAL()   /*User definition*/
-#endif
-
-/**@}*/
-
-
 // *** TYPEDEF ***
 /**
  * @brief fifo error values
@@ -111,7 +78,6 @@ typedef enum{
     FIFO_FULL,        /**< FIFO is full, data can not be stored */
     FIFO_EMPTY,       /**< FIFO is empty, no data can be read */
     FIFO_WRONG_PARAM, /**< Wrong Parameters given to a function */
-    FIFO_BUISY        /**< FIFO is buisy */
 }fifoerror_t;
 
 /**
@@ -123,7 +89,6 @@ typedef struct{
     FIFO_INDEX_TYPE read_idx;               /*!< read index for fifo read access, offset from pFifo in bytes */
     FIFO_INDEX_TYPE write_idx;              /*!< write index for fifo write access, offset from pFifo in bytes */
     void *pFifo;                            /*!< pointer to the first adress of the fifo memory */
-	uint8_t _lock;                          /*!< flag to lock the fifo */
 }fifo_handle_t;
 
 /** @defgroup fifo_core Core Fifo Functions
@@ -215,7 +180,6 @@ bool fifo_hasSpaceLeft(volatile fifo_handle_t *pHandle);
 /**
  * @brief flushes a FIFO
  * @return FIFO_NO_ERROR    Everything worked
- * @return FIFO_BUISY       FIFO handle is locked
  */
 fifoerror_t fifo_flush(volatile fifo_handle_t *pHandle);
 
